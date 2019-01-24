@@ -13,12 +13,16 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.SearchView;
+import android.widget.SearchView.OnQueryTextListener;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<Book>> {
     private static final String GOOGLE_API_URL="  https://www.googleapis.com/books/v1/volumes?q=android&maxResults=15";
+    String myUrl;
     private static final int Book_Loader_ID=1;
     private static final String LOG_TAG =MainActivity.class.getName() ;
     private BookAdapter mAdapter;
@@ -27,13 +31,40 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ListView bookListView = (ListView) findViewById(R.id.list);
+        SearchView searchView = (SearchView) findViewById(R.id.search);
+       // listView = (ListView) findViewById(R.id.lv1);
        // mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
         //BookListView.setEmptyView(mEmptyStateTextView);
 
+        searchView.setOnQueryTextListener(new OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                Uri.Builder builder = new Uri.Builder();
+                builder.scheme("https")
+                        .authority("www.googleapis.com")
+                        .appendPath("books")
+                        .appendPath("v1")
+                        .appendPath("volumes")
+                        .appendQueryParameter("q", query)
+                        .appendQueryParameter("maxResults", "15");
+                 myUrl = builder.build().toString();
+                 getQuery();
+
+                Toast.makeText(MainActivity.this, "" + myUrl, Toast.LENGTH_LONG).show();
+
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+                                          });
 
 
 
-        // Create a new adapter that takes an empty list of Books as input
+
+            // Create a new adapter that takes an empty list of Books as input
         mAdapter = new BookAdapter(this, new ArrayList<Book>());
 
         // Set the adapter on the {@link ListView}
@@ -59,27 +90,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 startActivity(websiteIntent);
             }
         });
-        ConnectivityManager connMgr = (ConnectivityManager)
-                getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        NetworkInfo activeNetwork = connMgr.getActiveNetworkInfo();
-        boolean isConnected = activeNetwork != null &&
-                activeNetwork.isConnectedOrConnecting();
-        if(isConnected) {
-            LoaderManager loaderManager = getLoaderManager();
-            loaderManager.initLoader(Book_Loader_ID, null, this);
-
-        }
-        else{
-           // View loadingIndicator = findViewById(R.id.loading_spinner);
-            //loadingIndicator.setVisibility(View.GONE);
-            //mEmptyStateTextView.setText(R.string.no_internet);
-        }
     }
     @Override
     public Loader<List<Book>> onCreateLoader(int id, Bundle bundle) {
         Log.i(LOG_TAG, "TEST:Create Loader");
-        return new BookLoader(this,GOOGLE_API_URL);
+        return new BookLoader(this,myUrl);
     }
 
     @Override
@@ -106,6 +122,26 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         mAdapter.clear();
         Log.i(LOG_TAG, "TEST:Reset loader");
 
+    }
+    public void getQuery(){
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = connMgr.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null &&
+                activeNetwork.isConnectedOrConnecting();
+        if(isConnected) {
+            //onLoaderReset();
+            mAdapter.clear();
+            LoaderManager loaderManager = getLoaderManager();
+            loaderManager.initLoader(Book_Loader_ID, null, this);
+
+        }
+        else{
+            // View loadingIndicator = findViewById(R.id.loading_spinner);
+            //loadingIndicator.setVisibility(View.GONE);
+            //mEmptyStateTextView.setText(R.string.no_internet);
+        }
     }
 
 }
