@@ -15,6 +15,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.SearchView.OnQueryTextListener;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -26,10 +27,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private static final int Book_Loader_ID=1;
     private static final String LOG_TAG =MainActivity.class.getName() ;
     private BookAdapter mAdapter;
+    private TextView mEmptyStateTextView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        View progress= findViewById(R.id.loading_spinner);
+        progress.setVisibility(View.GONE);
+        ListView earthquakeListView = (ListView) findViewById(R.id.list);
+        mEmptyStateTextView = (TextView) findViewById(R.id.empty_view);
+        earthquakeListView.setEmptyView(mEmptyStateTextView);
+
         ListView bookListView = (ListView) findViewById(R.id.list);
         SearchView searchView = (SearchView) findViewById(R.id.search);
        // listView = (ListView) findViewById(R.id.lv1);
@@ -48,9 +56,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                         .appendQueryParameter("q", query)
                         .appendQueryParameter("maxResults", "15");
                  myUrl = builder.build().toString();
+
                  getQuery();
 
-                Toast.makeText(MainActivity.this, "" + myUrl, Toast.LENGTH_LONG).show();
+               // Toast.makeText(MainActivity.this, "" + myUrl, Toast.LENGTH_LONG).show();
 
                 return false;
             }
@@ -94,17 +103,18 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
     @Override
     public Loader<List<Book>> onCreateLoader(int id, Bundle bundle) {
+        View progress= findViewById(R.id.loading_spinner);
+        progress.setVisibility(View.VISIBLE);
         Log.i(LOG_TAG, "TEST:Create Loader");
         return new BookLoader(this,myUrl);
     }
 
     @Override
     public void onLoadFinished(Loader<List<Book>> loader, List<Book> books) {
-        // Clear the adapter of previous earthquake data
+       View progress= findViewById(R.id.loading_spinner);
+        progress.setVisibility(View.GONE);
+        mEmptyStateTextView.setText("No Books Found.");
 
-     //   View progress= findViewById(R.id.loading_spinner);
-       // progress.setVisibility(View.GONE);
-        //mEmptyStateTextView.setText(R.string.no_earthquakes);
         mAdapter.clear();
 
         // If there is a valid list of {@link Earthquake}s, then add them to the adapter's
@@ -124,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
     public void getQuery(){
+        //int q=0;
         ConnectivityManager connMgr = (ConnectivityManager)
                 getSystemService(Context.CONNECTIVITY_SERVICE);
 
@@ -133,14 +144,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if(isConnected) {
             //onLoaderReset();
             mAdapter.clear();
+            mEmptyStateTextView.setText("");
+          //  View progress= findViewById(R.id.loading_spinner);
+            //progress.setVisibility(View.VISIBLE);
+           // Toast.makeText(MainActivity.this, "Worked" , Toast.LENGTH_LONG).show();
             LoaderManager loaderManager = getLoaderManager();
+           // LoaderManager loaderManager = getLoaderManager();
+           loaderManager.restartLoader(Book_Loader_ID, null, this);
             loaderManager.initLoader(Book_Loader_ID, null, this);
 
         }
         else{
-            // View loadingIndicator = findViewById(R.id.loading_spinner);
-            //loadingIndicator.setVisibility(View.GONE);
-            //mEmptyStateTextView.setText(R.string.no_internet);
+            mAdapter.clear();
+           mEmptyStateTextView.setText(R.string.no_internet);
         }
     }
 
